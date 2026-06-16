@@ -1,0 +1,29 @@
+assay_name: cytokine_elisa
+plate_type: 96_well
+samples:
+  - id: sample_001
+    well: A1
+    volume_ul: 50
+    donor_id: donor_123
+  - id: sample_002
+    well: A2
+    volume_ul: 50
+    donor_id: donor_456
+reagents:
+  - name: capture_antibody
+    volume_ul: 1000
+  - name: detection_antibody
+    volume_ul: 1000
+steps:
+  - type: dispense
+    reagent: capture_antibody
+    destination: all_wells
+    volume_ul: 100
+  - type: incubate
+    duration_min: 60
+  - type: dispense
+    reagent: detection_antibody
+    destination: all_wells
+    volume_ul: 100
+  - type: read_plate
+    wavelength_nm: 450

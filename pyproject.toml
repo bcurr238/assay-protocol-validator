@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "assay-protocol-validator"
+version = "0.1.0"
+description = "A beginner-friendly CLI for validating assay protocol YAML files."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Your Name" }
+]
+dependencies = [
+  "pydantic>=2.0,<3.0",
+  "PyYAML>=6.0,<7.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0,<9.0"
+]
+
+[project.scripts]
+assay-validator = "assay_protocol_validator.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
