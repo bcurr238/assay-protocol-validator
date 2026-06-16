@@ -76,6 +76,12 @@ Validate an invalid protocol:
 assay-validator examples/invalid_well.yaml
 ```
 
+Print a machine-readable JSON report:
+
+```bash
+assay-validator examples/invalid_well.yaml --json
+```
+
 You can also run the CLI without installing the console script:
 
 ```bash
@@ -101,6 +107,19 @@ Status: INVALID
 
 Errors:
   - samples.0.well: Well 'Z99' is not valid for plate type '96_well'.
+```
+
+For JSON output:
+
+```json
+{
+  "protocol_name": "cytokine_elisa_invalid_well",
+  "status": "invalid",
+  "errors": [
+    "samples.sample_001.well: Well 'Z99' is not valid for plate type '96_well'."
+  ],
+  "warnings": []
+}
 ```
 
 ## Running Tests

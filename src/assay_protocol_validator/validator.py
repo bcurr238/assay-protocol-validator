@@ -26,6 +26,16 @@ class ValidationReport:
     def is_valid(self) -> bool:
         return not self.errors
 
+    def to_dict(self) -> dict[str, object]:
+        """Return a machine-readable version of the validation report."""
+
+        return {
+            "protocol_name": self.protocol_name,
+            "status": "valid" if self.is_valid else "invalid",
+            "errors": [issue.message for issue in self.errors],
+            "warnings": [issue.message for issue in self.warnings],
+        }
+
 
 SUPPORTED_WELLS: dict[PlateType, set[str]] = {
     PlateType.WELL_96: {f"{row}{column}" for row in "ABCDEFGH" for column in range(1, 13)}
