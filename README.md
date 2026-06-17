@@ -116,7 +116,10 @@ For JSON output:
   "protocol_name": "cytokine_elisa_invalid_well",
   "status": "invalid",
   "errors": [
-    "samples.sample_001.well: Well 'Z99' is not valid for plate type '96_well'."
+    {
+      "code": "INVALID_WELL",
+      "message": "samples.sample_001.well: Well 'Z99' is not valid for plate type '96_well'."
+    }
   ],
   "warnings": []
 }

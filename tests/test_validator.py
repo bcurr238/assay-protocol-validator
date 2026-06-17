@@ -41,6 +41,7 @@ def test_invalid_well_is_error() -> None:
     report = validate_protocol_data(protocol)
 
     assert not report.is_valid
+    assert report.errors[0].code == "INVALID_WELL"
     assert "not valid for plate type" in report.errors[0].message
 
 
@@ -58,6 +59,7 @@ def test_duplicate_sample_wells_are_errors() -> None:
     report = validate_protocol_data(protocol)
 
     assert not report.is_valid
+    assert report.errors[0].code == "DUPLICATE_SAMPLE_WELL"
     assert "Duplicate well" in report.errors[0].message
 
 
@@ -68,6 +70,7 @@ def test_missing_donor_id_is_error() -> None:
     report = validate_protocol_data(protocol)
 
     assert not report.is_valid
+    assert report.errors[0].code == "SCHEMA_VALIDATION_ERROR"
     assert "samples.0.donor_id" in report.errors[0].message
 
 
@@ -78,6 +81,7 @@ def test_negative_sample_volume_is_error() -> None:
     report = validate_protocol_data(protocol)
 
     assert not report.is_valid
+    assert report.errors[0].code == "SCHEMA_VALIDATION_ERROR"
     assert "samples.0.volume_ul" in report.errors[0].message
 
 
@@ -88,6 +92,7 @@ def test_unknown_reagent_reference_is_error() -> None:
     report = validate_protocol_data(protocol)
 
     assert not report.is_valid
+    assert report.errors[0].code == "UNKNOWN_REAGENT"
     assert "Unknown reagent" in report.errors[0].message
 
 
@@ -98,6 +103,7 @@ def test_long_incubation_is_warning_not_error() -> None:
     report = validate_protocol_data(protocol)
 
     assert report.is_valid
+    assert report.warnings[0].code == "UNUSUAL_INCUBATION_DURATION"
     assert "outside the recommended range" in report.warnings[0].message
 
 
@@ -108,4 +114,5 @@ def test_unsupported_plate_type_is_error() -> None:
     report = validate_protocol_data(protocol)
 
     assert not report.is_valid
+    assert report.errors[0].code == "SCHEMA_VALIDATION_ERROR"
     assert "plate_type" in report.errors[0].message
