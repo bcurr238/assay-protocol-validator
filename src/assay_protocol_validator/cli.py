@@ -32,7 +32,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         data = load_yaml_file(args.protocol_path)
     except ProtocolParseError as exc:
-        report = ValidationReport(errors=[ValidationIssue(message=str(exc))])
+        report = ValidationReport(
+            errors=[ValidationIssue(code="PROTOCOL_PARSE_ERROR", message=str(exc))]
+        )
         _print_json_report(report) if args.json else _print_report(report)
         return 1
 

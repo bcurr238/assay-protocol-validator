@@ -21,4 +21,5 @@ def test_cli_json_output_for_invalid_protocol(capsys) -> None:
 
     assert exit_code == 1
     assert output["status"] == "invalid"
-    assert "not valid for plate type" in output["errors"][0]
+    assert output["errors"][0]["code"] == "INVALID_WELL"
+    assert "not valid for plate type" in output["errors"][0]["message"]

@@ -11,6 +11,7 @@ from assay_protocol_validator.models import PlateType, Protocol, protocol_from_m
 class ValidationIssue:
     """A single validation error or warning."""
 
+    code: str
     message: str
 
 
@@ -32,8 +33,8 @@ class ValidationReport:
         return {
             "protocol_name": self.protocol_name,
             "status": "valid" if self.is_valid else "invalid",
-            "errors": [issue.message for issue in self.errors],
-            "warnings": [issue.message for issue in self.warnings],
+            "errors": [_issue_to_dict(issue) for issue in self.errors],
+            "warnings": [_issue_to_dict(issue) for issue in self.warnings],
         }
 
 
@@ -71,8 +72,17 @@ def _pydantic_errors_to_issues(exc: ValidationError) -> list[ValidationIssue]:
     for error in exc.errors():
         location = ".".join(str(part) for part in error["loc"])
         prefix = f"{location}: " if location else ""
-        issues.append(ValidationIssue(message=f"{prefix}{error['msg']}"))
+        issues.append(
+            ValidationIssue(
+                code="SCHEMA_VALIDATION_ERROR",
+                message=f"{prefix}{error['msg']}",
+            )
+        )
     return issues
+
+
+def _issue_to_dict(issue: ValidationIssue) -> dict[str, str]:
+    return {"code": issue.code, "message": issue.message}
 
 
 def _validate_sample_wells(protocol: Protocol, report: ValidationReport) -> None:
@@ -84,6 +94,7 @@ def _validate_sample_wells(protocol: Protocol, report: ValidationReport) -> None
         if normalized_well not in supported_wells:
             report.errors.append(
                 ValidationIssue(
+                    code="INVALID_WELL",
                     message=(
                         f"samples.{sample.id}.well: Well '{sample.well}' is not valid "
                         f"for plate type '{protocol.plate_type.value}'."
@@ -95,6 +106,7 @@ def _validate_sample_wells(protocol: Protocol, report: ValidationReport) -> None
         if normalized_well in occupied_wells:
             report.errors.append(
                 ValidationIssue(
+                    code="DUPLICATE_SAMPLE_WELL",
                     message=(
                         f"samples.{sample.id}.well: Duplicate well '{sample.well}' "
                         f"already used by sample '{occupied_wells[normalized_well]}'."
@@ -115,6 +127,7 @@ def _validate_reagent_references(protocol: Protocol, report: ValidationReport) -
         if step.reagent not in reagent_names:
             report.errors.append(
                 ValidationIssue(
+                    code="UNKNOWN_REAGENT",
                     message=(
                         f"steps.{index}.reagent: Unknown reagent '{step.reagent}'. "
                         "Define it in the reagents section before referencing it."
@@ -133,6 +146,7 @@ def _add_scientific_warnings(protocol: Protocol, report: ValidationReport) -> No
             ):
                 report.warnings.append(
                     ValidationIssue(
+                        code="UNUSUAL_INCUBATION_DURATION",
                         message=(
                             f"steps.{index}.duration_min: Incubation duration of "
                             f"{step.duration_min:g} min is outside the recommended range "
@@ -150,6 +164,7 @@ def _add_scientific_warnings(protocol: Protocol, report: ValidationReport) -> No
             ):
                 report.warnings.append(
                     ValidationIssue(
+                        code="UNUSUAL_READ_WAVELENGTH",
                         message=(
                             f"steps.{index}.wavelength_nm: Read wavelength of "
                             f"{step.wavelength_nm:g} nm is outside the common absorbance "
