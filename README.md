@@ -1,24 +1,148 @@
 # Assay Protocol Validator
 
-A beginner-friendly, professionally relevant Python CLI for validating assay protocol files before they are used in lab automation workflows.
+A Python command-line tool for validating YAML assay protocol files before they are used in lab automation workflows.
 
-The first version supports YAML protocol files and checks whether an assay is structurally valid and scientifically/logistically reasonable.
+> Work in progress: this project is being built incrementally as a public-GitHub-safe portfolio project focused on assay development tooling, lab automation validation, and LIMS-style workflow concepts.
 
-## Why This Project Matters
+## What It Does
 
-Lab automation workflows depend on protocol files that describe samples, reagents, plates, and steps. A small typo like an invalid well name, missing sample metadata, or an unknown reagent reference can cause confusing failures later in a workflow.
+Assay protocols often describe samples, reagents, plate layouts, and workflow steps in structured files. A small typo, such as an invalid well name or an unknown reagent reference, can cause confusing failures later in an automation workflow.
 
-This project catches those issues early with clear errors and warnings.
+This validator catches those issues early and returns clear human-readable output or machine-readable JSON.
 
-It is designed as a public-GitHub-safe portfolio project for learning:
+Current capabilities:
 
-- Python packaging with `pyproject.toml`
-- CLI design
-- YAML parsing
-- Pydantic data validation
-- Cross-field validation logic
-- pytest-based testing
-- LIMS-style and lab automation concepts
+- Parse YAML protocol files
+- Validate protocol structure with Pydantic
+- Validate assay-specific rules across samples, reagents, wells, and steps
+- Report errors and warnings separately
+- Return stable issue codes for downstream tools
+- Print human-readable CLI output
+- Print JSON output for automation and integrations
+- Include example valid and invalid protocols
+- Include pytest coverage
+
+## Example Protocol
+
+```yaml
+assay_name: cytokine_elisa
+plate_type: 96_well
+samples:
+  - id: sample_001
+    well: A1
+    volume_ul: 50
+    donor_id: donor_123
+reagents:
+  - name: capture_antibody
+    volume_ul: 1000
+steps:
+  - type: dispense
+    reagent: capture_antibody
+    destination: all_wells
+    volume_ul: 100
+  - type: incubate
+    duration_min: 60
+  - type: read_plate
+    wavelength_nm: 450
+```
+
+## Installation
+
+From the project root:
+
+```bash
+python3 -m pip install -e ".[dev]"
+```
+
+This installs the package in editable mode, so local code changes are immediately reflected when you run the CLI.
+
+## Usage
+
+Validate a protocol:
+
+```bash
+assay-validator examples/valid_elisa.yaml
+```
+
+Validate an invalid protocol:
+
+```bash
+assay-validator examples/invalid_well.yaml
+```
+
+Print a machine-readable JSON report:
+
+```bash
+assay-validator examples/invalid_well.yaml --json
+```
+
+You can also run the CLI as a Python module:
+
+```bash
+python3 -m assay_protocol_validator.cli examples/valid_elisa.yaml
+```
+
+## Example Output
+
+Human-readable output:
+
+```text
+Protocol: cytokine_elisa_invalid_well
+Status: INVALID
+
+Errors:
+  - samples.sample_001.well: Well 'Z99' is not valid for plate type '96_well'.
+```
+
+JSON output:
+
+```json
+{
+  "protocol_name": "cytokine_elisa_invalid_well",
+  "status": "invalid",
+  "errors": [
+    {
+      "code": "INVALID_WELL",
+      "message": "samples.sample_001.well: Well 'Z99' is not valid for plate type '96_well'."
+    }
+  ],
+  "warnings": []
+}
+```
+
+## Validation Rules
+
+Errors:
+
+- Unsupported plate types
+- Invalid well names
+- Missing required fields
+- Negative or zero sample and reagent volumes
+- Negative or zero dispense volumes
+- Duplicate sample wells
+- Unknown reagents referenced by dispense steps
+- Missing step-specific fields
+
+Warnings:
+
+- Incubation durations outside the recommended range of 1 to 240 minutes
+- Plate read wavelengths outside the common absorbance range of 300 to 800 nm
+
+## Issue Codes
+
+Validation issues include stable codes so other tools do not need to parse English error messages.
+
+Examples:
+
+- `INVALID_WELL`
+- `DUPLICATE_SAMPLE_WELL`
+- `UNKNOWN_REAGENT`
+- `SCHEMA_VALIDATION_ERROR`
+- `UNUSUAL_INCUBATION_DURATION`
+- `UNUSUAL_READ_WAVELENGTH`
+- `PROTOCOL_PARSE_ERROR`
+
+This is useful for CI pipelines, LIMS-style systems, scheduling tools, web apps, or future AI-assisted protocol review workflows.
 
 ## Project Structure
 
@@ -38,97 +162,25 @@ assay-protocol-validator/
     invalid_missing_metadata.yaml
     invalid_well.yaml
   tests/
+    test_cli.py
     test_parser.py
     test_validator.py
 ```
 
-## Design Decisions
+## Design Notes
 
 This project uses a `src/` layout because it mirrors how many professional Python packages are structured. It helps tests import the installed package instead of accidentally importing loose files from the project root.
 
-Pydantic is used in `models.py` for field-level validation, such as required fields and positive volumes. This keeps basic data rules close to the data shape.
+Pydantic is used in `models.py` for schema and field-level validation, such as required fields, supported step types, and positive volumes.
 
-The `validator.py` module handles cross-field rules, such as duplicate sample wells or a step referencing a reagent that does not exist. These checks need to see the full protocol, so they live outside individual models.
+The `validator.py` module handles cross-field rules, such as duplicate sample wells or a dispense step referencing a reagent that does not exist. These checks need access to the full protocol, so they live outside the individual Pydantic models.
 
-The CLI is intentionally built with Python's standard `argparse` module for the first milestone. That keeps dependencies small while still producing a useful command-line interface.
-
-## Installation
-
-From the project root:
-
-```bash
-python -m pip install -e ".[dev]"
-```
-
-This installs the package in editable mode, which means changes you make locally are immediately reflected when you run the CLI.
-
-## Usage
-
-Validate a valid protocol:
-
-```bash
-assay-validator examples/valid_elisa.yaml
-```
-
-Validate an invalid protocol:
-
-```bash
-assay-validator examples/invalid_well.yaml
-```
-
-Print a machine-readable JSON report:
-
-```bash
-assay-validator examples/invalid_well.yaml --json
-```
-
-You can also run the CLI without installing the console script:
-
-```bash
-python -m assay_protocol_validator.cli examples/valid_elisa.yaml
-```
-
-## Example Output
-
-For a valid protocol with a warning:
-
-```text
-Protocol: cytokine_elisa
-Status: VALID
-
-Warnings:
-  - Incubation duration of 300 min is outside the recommended range of 1-240 min.
-```
-
-For an invalid protocol:
-
-```text
-Status: INVALID
-
-Errors:
-  - samples.0.well: Well 'Z99' is not valid for plate type '96_well'.
-```
-
-For JSON output:
-
-```json
-{
-  "protocol_name": "cytokine_elisa_invalid_well",
-  "status": "invalid",
-  "errors": [
-    {
-      "code": "INVALID_WELL",
-      "message": "samples.sample_001.well: Well 'Z99' is not valid for plate type '96_well'."
-    }
-  ],
-  "warnings": []
-}
-```
+The CLI is built with Python's standard `argparse` module for now. That keeps the project beginner-friendly while still supporting a professional command-line interface.
 
 ## Running Tests
 
 ```bash
-pytest
+python3 -m pytest
 ```
 
 The tests cover:
@@ -140,53 +192,47 @@ The tests cover:
 - Duplicate sample wells
 - Unknown reagent references
 - Warning behavior for unusual incubation times
+- JSON CLI output
 
-## Current Validation Rules
+## Development Workflow
 
-Errors:
-
-- Unsupported plate types
-- Invalid well names
-- Missing required fields
-- Negative or zero sample and reagent volumes
-- Negative or zero dispense volumes
-- Duplicate sample wells
-- Unknown reagents referenced by dispense steps
-- Missing step-specific fields
-
-Warnings:
-
-- Incubation durations outside the recommended range of 1 to 240 minutes
-- Plate read wavelengths outside the common absorbance range of 300 to 800 nm
-
-## Sensible Git/GitHub Workflow
-
-For this project, use small milestone branches:
+This project is built in small milestone branches:
 
 ```bash
-git checkout -b milestone-01-yaml-validator
-git add .
-git commit -m "Scaffold assay protocol validator CLI"
-git push -u origin milestone-01-yaml-validator
+git checkout main
+git pull
+git checkout -b milestone-04-github-actions-ci
 ```
 
-Then open a pull request into `main`.
+Each milestone should:
 
-Good future branches:
+- Add one clear capability
+- Include focused tests
+- Update the README when behavior changes
+- Be reviewed through a pull request before merging into `main`
 
-- `milestone-02-json-support`
-- `milestone-03-better-error-reporting`
-- `milestone-04-lims-style-sample-manifest`
-- `milestone-05-ai-protocol-review`
+Completed milestones:
 
-Each branch should add one clear capability, tests for that capability, and README updates.
+- Milestone 1: YAML protocol validator CLI
+- Milestone 2: JSON output
+- Milestone 3: issue codes in validation reports
 
-## Future Ideas
+Planned milestones:
 
-- JSON support
-- Richer plate formats such as 384-well plates
-- Configurable validation policies
-- CSV sample manifest integration
-- Export validation reports as JSON
-- GitHub Actions CI
-- AI-assisted protocol review summaries
+- Milestone 4: GitHub Actions CI
+- Milestone 5: additional domain validation rules
+- Milestone 6: JSON protocol file support
+- Milestone 7: validation report export
+- Milestone 8: plate map summaries
+
+## Roadmap
+
+Future ideas:
+
+- Support additional plate formats, such as 384-well plates
+- Add configurable validation policies
+- Validate reagent volume sufficiency
+- Validate sample manifests from CSV files
+- Export validation reports to JSON files
+- Add GitHub Actions CI
+- Add AI-assisted protocol review summaries
