@@ -21,6 +21,7 @@ Current capabilities:
 - Print JSON output for automation and integrations
 - Include example valid and invalid protocols
 - Include pytest coverage
+- Run automated tests with GitHub Actions CI
 
 ## Example Protocol
 
@@ -216,10 +217,10 @@ Completed milestones:
 - Milestone 1: YAML protocol validator CLI
 - Milestone 2: JSON output
 - Milestone 3: issue codes in validation reports
+- Milestone 4: GitHub Actions CI
 
 Planned milestones:
 
-- Milestone 4: GitHub Actions CI
 - Milestone 5: additional domain validation rules
 - Milestone 6: JSON protocol file support
 - Milestone 7: validation report export
@@ -234,5 +235,4 @@ Future ideas:
 - Validate reagent volume sufficiency
 - Validate sample manifests from CSV files
 - Export validation reports to JSON files
-- Add GitHub Actions CI
 - Add AI-assisted protocol review summaries
