@@ -116,3 +116,86 @@ def test_unsupported_plate_type_is_error() -> None:
     assert not report.is_valid
     assert report.errors[0].code == "SCHEMA_VALIDATION_ERROR"
     assert "plate_type" in report.errors[0].message
+
+def test_zero_sample_volume_is_error() -> None:
+    protocol = _valid_protocol()
+    protocol["samples"][0]["volume_ul"] = 0
+
+    report = validate_protocol_data(protocol)
+
+    assert not report.is_valid
+    assert report.errors[0].code == "SCHEMA_VALIDATION_ERROR"
+    assert "samples.0.volume_ul" in report.errors[0].message
+
+def test_schema_error_prevents_reagent_checks() -> None:
+    protocol = _valid_protocol()
+    protocol["samples"][0]["volume_ul"] = 0
+    protocol["steps"][0]["reagent"] = "nonexistent_reagent"
+
+    report = validate_protocol_data(protocol)
+
+    assert not report.is_valid
+    assert report.errors[0].code == "SCHEMA_VALIDATION_ERROR"
+    assert "samples.0.volume_ul" in report.errors[0].message
+
+    error_codes = [issue.code for issue in report.errors]
+    assert "UNKNOWN_REAGENT" not in error_codes
+
+def test_insufficient_reagent_volume_is_error() -> None:
+    protocol = _valid_protocol()
+    protocol["reagents"][0]["volume_ul"] = 99
+
+    report = validate_protocol_data(protocol)
+    assert not report.is_valid
+    assert report.errors[0].code == "INSUFFICIENT_REAGENT_VOLUME"
+    assert "reagents.0.volume_ul" in report.errors[0].message
+    
+def test_repeated_dispenses_exceed_available_reagent() -> None:
+    protocol = _valid_protocol()
+    protocol["reagents"][0]["volume_ul"] = 150
+
+    second_dispense = protocol["steps"][0].copy()
+    protocol["steps"].append(second_dispense)
+
+    report = validate_protocol_data(protocol)
+
+    assert not report.is_valid
+    assert report.errors[0].code == "INSUFFICIENT_REAGENT_VOLUME"
+    assert "reagents.0.volume_ul" in report.errors[0].message
+
+def test_all_wells_dispense_counts_each_defined_well() -> None:
+    protocol = _valid_protocol()
+    protocol["reagents"][0]["volume_ul"] = 150
+
+    second_sample = protocol["samples"][0].copy()
+    # Give the copy a different ID and well, then append it.
+
+    second_sample["id"] = "sample_002"
+    second_sample["well"] = "A2"
+    protocol["samples"].append(second_sample)
+
+    report = validate_protocol_data(protocol)
+    # Assert the expected result and issue code.
+    assert not report.is_valid
+    assert report.errors[0].code == "INSUFFICIENT_REAGENT_VOLUME"
+    assert "reagents.0.volume_ul" in report.errors[0].message
+
+def test_reagent_volume_budget() -> None:
+    protocol = _valid_protocol()
+    protocol["reagents"][0]["volume_ul"] = 150
+
+    # Create second reagent copy and give it a separate id. Volume stays at 150uL
+    second_reagent = protocol["reagents"][0].copy()
+    second_reagent["name"] = "phosphate_buffered_saline"
+    second_reagent["volume_ul"] = 150 #Ensure the volume of the second reagent is 150uL
+    protocol["reagents"].append(second_reagent)
+
+    # Create second step with newly defined reagent 
+    second_step = protocol["steps"][0].copy()
+    second_step["reagent"]="phosphate_buffered_saline"
+    protocol["steps"].append(second_step)
+
+    report = validate_protocol_data(protocol)
+    # Assert the expected result and issue code.
+    assert report.is_valid
+    assert report.errors == []

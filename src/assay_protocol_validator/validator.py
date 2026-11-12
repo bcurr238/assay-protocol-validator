@@ -63,6 +63,8 @@ def validate_protocol_data(data: dict) -> ValidationReport:
     _validate_sample_wells(protocol, report)
     _validate_reagent_references(protocol, report)
     _add_scientific_warnings(protocol, report)
+    _validate_reagent_references(protocol, report)
+    _validate_reagent_volumes(protocol, report)
 
     return report
 
@@ -134,6 +136,42 @@ def _validate_reagent_references(protocol: Protocol, report: ValidationReport) -
                     )
                 )
             )
+
+def _validate_reagent_volumes(
+    protocol: Protocol,
+    report: ValidationReport,
+) -> None:
+
+    used_volumes={}
+
+    for step in protocol.steps:
+        # Skip steps that aren't dispense steps.
+        if step.type != "dispense":
+            continue
+
+        if step.destination == "all_wells":
+            required_volume = step.volume_ul*len(protocol.samples)
+
+            for reagent_index, reagent in enumerate(protocol.reagents):
+                if reagent.name == step.reagent:
+                    previously_used = used_volumes.get(reagent.name, 0)
+                    available_volume = reagent.volume_ul - previously_used
+
+                    # Check required_volume against available_volume here.
+
+                    if required_volume > available_volume:
+                        report.errors.append(
+                            ValidationIssue(
+                                code="INSUFFICIENT_REAGENT_VOLUME",
+                                message=(
+                                    f"reagents.{reagent_index}.volume_ul: "
+                                    f"Reagent '{reagent.name}' requires "
+                                    f"{required_volume:g} uL, but only "
+                                    f"{available_volume:g} uL is available."
+                                ),
+                            )
+                        )
+                    used_volumes[reagent.name] = previously_used + required_volume
 
 
 def _add_scientific_warnings(protocol: Protocol, report: ValidationReport) -> None:
