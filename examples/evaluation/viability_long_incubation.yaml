@@ -1,0 +1,24 @@
+# Synthetic validator fixture. See manifest.json for the expected outcome.
+assay_name: viability_long_incubation
+plate_type: 96_well
+samples:
+- id: sample_001
+  well: A1
+  volume_ul: 10
+  donor_id: synthetic_001
+- id: sample_002
+  well: A2
+  volume_ul: 10
+  donor_id: synthetic_002
+reagents:
+- name: demo_colorimetric_reagent
+  volume_ul: 60
+steps:
+- type: dispense
+  reagent: demo_colorimetric_reagent
+  destination: all_wells
+  volume_ul: 10
+- type: incubate
+  duration_min: 241
+- type: read_plate
+  wavelength_nm: 450

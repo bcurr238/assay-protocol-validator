@@ -61,7 +61,6 @@ def validate_protocol_data(data: dict) -> ValidationReport:
 
     report.protocol_name = protocol.assay_name
     _validate_sample_wells(protocol, report)
-    _validate_reagent_references(protocol, report)
     _add_scientific_warnings(protocol, report)
     _validate_reagent_references(protocol, report)
     _validate_reagent_volumes(protocol, report)

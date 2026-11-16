@@ -1,0 +1,24 @@
+# Synthetic validator fixture. See manifest.json for the expected outcome.
+assay_name: pcr_setup_unknown_reagent
+plate_type: 96_well
+samples:
+- id: sample_001
+  well: C1
+  volume_ul: 10
+  donor_id: synthetic_001
+- id: sample_002
+  well: C2
+  volume_ul: 10
+  donor_id: synthetic_002
+reagents:
+- name: demo_setup_mix
+  volume_ul: 20
+steps:
+- type: dispense
+  reagent: demo_setup_mix
+  destination: all_wells
+  volume_ul: 4
+- type: dispense
+  reagent: demo_setup_mxi
+  destination: all_wells
+  volume_ul: 3

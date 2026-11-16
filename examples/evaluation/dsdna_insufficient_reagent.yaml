@@ -1,0 +1,24 @@
+# Synthetic validator fixture. See manifest.json for the expected outcome.
+assay_name: dsdna_insufficient_reagent
+plate_type: 96_well
+samples:
+- id: sample_001
+  well: B1
+  volume_ul: 10
+  donor_id: synthetic_001
+- id: sample_002
+  well: B2
+  volume_ul: 10
+  donor_id: synthetic_002
+- id: sample_003
+  well: B3
+  volume_ul: 10
+  donor_id: synthetic_003
+reagents:
+- name: demo_quantitation_reagent
+  volume_ul: 11
+steps:
+- type: dispense
+  reagent: demo_quantitation_reagent
+  destination: all_wells
+  volume_ul: 4

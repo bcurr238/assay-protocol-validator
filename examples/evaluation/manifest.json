@@ -1,0 +1,104 @@
+{
+  "description": "Expected outcomes describe the current software rules. All identifiers and numeric values are synthetic fixtures for software evaluation.",
+  "scope": {
+    "viability": "Simplified plate dispense, incubation, and endpoint read.",
+    "dsdna": "Plate-based surrogate for reagent bookkeeping only. The source uses a Qubit fluorometer and assay tubes or strips, which this schema does not model.",
+    "pcr_setup": "Reagent dispense bookkeeping only. The schema does not model amplification, thermocycling, or downstream analysis."
+  },
+  "cases": [
+    {
+      "file": "viability_plate_baseline.yaml",
+      "family": "viability",
+      "expected_status": "valid",
+      "expected_error_codes": [],
+      "expected_warning_codes": [],
+      "reason": "Two defined wells consume 20 uL, within the 60 uL budget. No implemented rule flags the fixture."
+    },
+    {
+      "file": "viability_long_incubation.yaml",
+      "family": "viability",
+      "expected_status": "valid",
+      "expected_error_codes": [],
+      "expected_warning_codes": [
+        "UNUSUAL_INCUBATION_DURATION"
+      ],
+      "reason": "241 minutes is one minute above the validator's warning threshold. Warnings alone preserve valid status."
+    },
+    {
+      "file": "viability_duplicate_well.yaml",
+      "family": "viability",
+      "expected_status": "invalid",
+      "expected_error_codes": [
+        "DUPLICATE_SAMPLE_WELL"
+      ],
+      "expected_warning_codes": [],
+      "reason": "The validator normalizes a1 to A1 and reports the second assignment to that well."
+    },
+    {
+      "file": "viability_invalid_well.yaml",
+      "family": "viability",
+      "expected_status": "invalid",
+      "expected_error_codes": [
+        "INVALID_WELL"
+      ],
+      "expected_warning_codes": [],
+      "reason": "A13 is outside the supported 96-well plate columns."
+    },
+    {
+      "file": "dsdna_exact_reagent_budget.yaml",
+      "family": "dsdna",
+      "expected_status": "valid",
+      "expected_error_codes": [],
+      "expected_warning_codes": [],
+      "reason": "Three defined wells at 4 uL per well use exactly the 12 uL available."
+    },
+    {
+      "file": "dsdna_insufficient_reagent.yaml",
+      "family": "dsdna",
+      "expected_status": "invalid",
+      "expected_error_codes": [
+        "INSUFFICIENT_REAGENT_VOLUME"
+      ],
+      "expected_warning_codes": [],
+      "reason": "The 12 uL dispense requirement exceeds the 11 uL available."
+    },
+    {
+      "file": "dsdna_missing_sample_metadata.yaml",
+      "family": "dsdna",
+      "expected_status": "invalid",
+      "expected_error_codes": [
+        "SCHEMA_VALIDATION_ERROR"
+      ],
+      "expected_warning_codes": [],
+      "reason": "The second sample omits donor_id, a required field in the repository schema."
+    },
+    {
+      "file": "pcr_setup_baseline.yaml",
+      "family": "pcr_setup",
+      "expected_status": "valid",
+      "expected_error_codes": [],
+      "expected_warning_codes": [],
+      "reason": "Two dispenses using the same reagent require 8 and 6 uL across the defined wells, within the 20 uL budget."
+    },
+    {
+      "file": "pcr_setup_cumulative_shortage.yaml",
+      "family": "pcr_setup",
+      "expected_status": "invalid",
+      "expected_error_codes": [
+        "INSUFFICIENT_REAGENT_VOLUME"
+      ],
+      "expected_warning_codes": [],
+      "reason": "Each dispense fits within 13 uL by itself. Together they need 14 uL."
+    },
+    {
+      "file": "pcr_setup_unknown_reagent.yaml",
+      "family": "pcr_setup",
+      "expected_status": "invalid",
+      "expected_error_codes": [
+        "UNKNOWN_REAGENT"
+      ],
+      "expected_warning_codes": [],
+      "reason": "The second step references a reagent name absent from the reagent list."
+    }
+  ]
+}
