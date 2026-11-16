@@ -122,12 +122,15 @@ Errors:
 - Negative or zero dispense volumes
 - Duplicate sample wells
 - Unknown reagents referenced by dispense steps
+- Insufficient reagent volume for `all_wells` dispenses
 - Missing step-specific fields
 
 Warnings:
 
 - Incubation durations outside the recommended range of 1 to 240 minutes
 - Plate read wavelengths outside the common absorbance range of 300 to 800 nm
+
+For a dispense step with `destination: all_wells`, the validator counts the wells defined in `samples`. The step's `volume_ul` is the amount dispensed per well. For example, dispensing 100 µL per well to two defined wells requires 200 µL. Repeated `all_wells` dispenses using the same reagent draw from its starting volume. If a step requires more than the remaining volume, the validator reports `INSUFFICIENT_REAGENT_VOLUME`.
 
 ## Issue Codes
 
@@ -138,6 +141,7 @@ Examples:
 - `INVALID_WELL`
 - `DUPLICATE_SAMPLE_WELL`
 - `UNKNOWN_REAGENT`
+- `INSUFFICIENT_REAGENT_VOLUME`
 - `SCHEMA_VALIDATION_ERROR`
 - `UNUSUAL_INCUBATION_DURATION`
 - `UNUSUAL_READ_WAVELENGTH`
@@ -232,7 +236,6 @@ Future ideas:
 
 - Support additional plate formats, such as 384-well plates
 - Add configurable validation policies
-- Validate reagent volume sufficiency
 - Validate sample manifests from CSV files
 - Export validation reports to JSON files
 - Add AI-assisted protocol review summaries

@@ -1,0 +1,50 @@
+assay_name: normalization_assay
+plate_type: 96_well
+samples:
+  - id: sample_001
+    well: A1
+    volume_ul: 50
+    donor_id: donor_123
+  - id: sample_002
+    well: A2
+    volume_ul: 50
+    donor_id: donor_456
+  - id: sample_003
+    well: A3
+    volume_ul: 50
+    donor_id: donor_404
+  - id: sample_004
+    well: A4
+    volume_ul: 50
+    donor_id: donor_032
+reagents:
+  - name: PBS
+    volume_ul: 1000
+  - name: detection_reagent
+    volume_ul: 1000
+steps:
+  - type: dispense
+    reagent: detection_reagent
+    destination: all_wells
+    volume_ul: 1
+  - type: read_plate
+    duration_min: 5
+    wavelength_nm: 450
+  - type: dispense
+    reagent: PBS
+    destination: A1
+    volume_ul: 43
+  - type: dispense
+    reagent: PBS
+    destination: A2
+    volume_ul: 56
+  - type: dispense
+    reagent: PBS
+    destination: A3
+    volume_ul: 21
+  - type: dispense
+    reagent: PBS
+    destination: A4
+    volume_ul: 60
+  - type: read_plate
+    wavelength_nm: 450
