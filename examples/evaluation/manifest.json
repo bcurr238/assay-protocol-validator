@@ -12,7 +12,11 @@
       "expected_status": "valid",
       "expected_error_codes": [],
       "expected_warning_codes": [],
-      "reason": "Two defined wells consume 20 uL, within the 60 uL budget. No implemented rule flags the fixture."
+      "reason": "Two defined wells consume 20 uL, within the 60 uL budget. No implemented rule flags the fixture.",
+      "expected_assistant": {
+        "outcome": "leave_unchanged",
+        "reason": "no_changes"
+      }
     },
     {
       "file": "viability_long_incubation.yaml",
@@ -88,8 +92,13 @@
         "INSUFFICIENT_REAGENT_VOLUME"
       ],
       "expected_warning_codes": [],
-      "reason": "Each dispense fits within 13 uL by itself. Together they need 14 uL."
-    },
+      "reason": "Each dispense fits within 13 uL by itself. Together they need 14 uL.",
+      "expected_assistant":{
+        "outcome": "request_human_input",
+        "reason": "The protocol requires 14 uL but lists 13 uL available. Ask the operator to confirm the available volume."
+        }
+      },
+
     {
       "file": "pcr_setup_unknown_reagent.yaml",
       "family": "pcr_setup",
@@ -98,7 +107,16 @@
         "UNKNOWN_REAGENT"
       ],
       "expected_warning_codes": [],
-      "reason": "The second step references a reagent name absent from the reagent list."
+      "reason": "The second step references a reagent name absent from the reagent list.",
+      "expected_assistant":{
+        "outcome": "propose_edit",
+        "edit": {
+          "step_index": 1,
+          "field": "reagent",
+          "before": "demo_setup_mxi",
+          "after": "demo_setup_mix"
+        }
+      }
     }
   ]
 }

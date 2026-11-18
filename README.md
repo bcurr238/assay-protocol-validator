@@ -222,20 +222,118 @@ Completed milestones:
 - Milestone 2: JSON output
 - Milestone 3: issue codes in validation reports
 - Milestone 4: GitHub Actions CI
+- Milestone 5: cumulative reagent volume validation
+- Milestone 6: labeled synthetic evaluation fixtures
 
-Planned milestones:
+Current milestone:
 
-- Milestone 5: additional domain validation rules
-- Milestone 6: JSON protocol file support
-- Milestone 7: validation report export
-- Milestone 8: plate map summaries
+- Milestone 7: AI-assisted CLI proposals and evaluation
 
 ## Roadmap
 
 Future ideas:
 
+- Expose validation through FastAPI and package it with Docker
 - Support additional plate formats, such as 384-well plates
 - Add configurable validation policies
 - Validate sample manifests from CSV files
 - Export validation reports to JSON files
 - Add AI-assisted protocol review summaries
+
+## Phase 2 AI-assisted CLI
+
+Run these commands from the repository root after installing the package with
+`python3 -m pip install -e ".[dev]"`.
+
+```bash
+assay-validator fix examples/evaluation/pcr_setup_unknown_reagent.yaml
+assay-validator fix examples/evaluation/pcr_setup_cumulative_shortage.yaml
+assay-validator examples/valid_normalization_assay.yaml --json
+python3 -m pytest
+python3 -m assay_protocol_validator.evaluation
+```
+
+The `fix` command defaults to a scripted fake model. It validates the loaded
+YAML first and skips the model when there are no errors, including when warnings
+are present. Otherwise it sends structured issues, declared reagent names, and
+unknown references to the model. The response must request human input or propose
+one replacement of an unknown dispense reagent reference with a declared name.
+
+The application checks the response format, target, and previous value before
+applying the edit to a deep copy. It calls `validate_protocol_data()` on that copy
+once and displays the proposed edit and candidate report. The original YAML file
+is preserved. A passing candidate receives `accepted`; review the proposal before
+manually applying it. A candidate with remaining errors receives `failed`.
+Unsupported proposals receive `rejected`. Adapter failures receive `model_error`. Shortages request operator confirmation
+of the actual available volume.
+
+`fix` supports `--json`. Exit code 0 means `accepted` or `leave_unchanged`; code 1
+means human input is needed, a proposal was rejected or failed, an adapter failed, or parsing failed.
+The existing `assay-validator <protocol.yaml> --json` command remains available.
+To validate a file literally named `fix`, use `./fix` as its path.
+
+The evaluation runner reads `expected_assistant` labels from the manifest and
+reports accepted corrections out of eligible corrections, correct unchanged and
+human-input decisions, rejected or failed proposals, and expectation mismatches.
+Acceptance in evaluation requires a valid candidate, the intended edit, and exact
+preservation of unrelated fields. Cases without assistant labels are counted as
+skipped. Reason wording is explanatory and is not scored. The runner exits with
+code 1 if an expectation does not match.
+
+These default results evaluate the fake model and application flow.
+
+### Initial evaluation results
+
+The developer's live run on November 17, 2026 used `gpt-6.1-terra` and matched
+all three selected assistant expectations. The offline fake-model evaluation
+also matched those expectations.
+
+| Metric | Fake model | OpenAI live run |
+| --- | --- | --- |
+| Accepted corrections / eligible cases | 1 / 1 | 1 / 1 |
+| Correct unchanged decisions / expected | 1 / 1 | 1 / 1 |
+| Correct human-input decisions / expected | 1 / 1 | 1 / 1 |
+| Rejected or failed proposals | 0 | 0 |
+| Model errors | 0 | 0 |
+| Expectation mismatches | 0 | 0 |
+
+Seven fixtures have deterministic validation labels only and are skipped by the
+assistant evaluation. This small initial evaluation demonstrates the selected
+decision paths. Automated tests additionally exercise rejected proposals and
+corrections that remain invalid. Live results can vary between runs.
+
+### Optional OpenAI adapter
+
+Install the optional SDK in your Python environment and set `OPENAI_API_KEY` in
+the terminal environment before running live commands. The application reads the
+variable directly. It does not load `.env` files.
+
+```bash
+python3 -m pip install -e ".[dev,openai]"
+assay-validator fix examples/evaluation/pcr_setup_unknown_reagent.yaml --provider openai
+assay-validator fix examples/evaluation/pcr_setup_cumulative_shortage.yaml --provider openai
+python3 -m assay_protocol_validator.evaluation --provider openai
+```
+
+The default live model is `gpt-6.1-terra`. Set `OPENAI_MODEL` or pass `--model`
+with `--provider openai` to select another model supporting Responses and
+Structured Outputs. CLI selection takes precedence over the environment.
+
+The adapter sends the validation report, declared reagent names, and unknown
+references. It requests a Pydantic-structured decision using the Responses API,
+then passes that decision through the same edit checks and revalidation as the
+fake model. Evaluation labels are never sent to the model. Valid inputs skip
+API calls and credential checks.
+
+Each invalid case makes at most one API call, with a 30-second SDK timeout,
+a 4096-token output limit, and automatic retries disabled. Refusals, incomplete
+responses, missing credentials, and API failures produce a `model_error` outcome.
+Malformed structured decisions are rejected. Responses use `store=False`.
+
+Live runs require API access and incur provider usage charges. Evaluation output
+identifies the provider and model and counts model errors separately. Run fake
+and live evaluations separately to compare their results. Automated tests use
+simulated API responses and require no API key.
+
+API references are available in the [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs)
+and [model documentation](https://developers.openai.com/api/docs/models/gpt-6.1-terra).
