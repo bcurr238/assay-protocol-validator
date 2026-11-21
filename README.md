@@ -52,7 +52,7 @@ steps:
 From the project root:
 
 ```bash
-python3 -m pip install -e ".[dev]"
+python3 -m pip install -e ".[dev,api]"
 ```
 
 This installs the package in editable mode, so local code changes are immediately reflected when you run the CLI.
@@ -224,16 +224,16 @@ Completed milestones:
 - Milestone 4: GitHub Actions CI
 - Milestone 5: cumulative reagent volume validation
 - Milestone 6: labeled synthetic evaluation fixtures
+- Milestone 7: AI-assisted CLI proposals and evaluation
 
 Current milestone:
 
-- Milestone 7: AI-assisted CLI proposals and evaluation
+- Milestone 8: FastAPI validation endpoint and Docker packaging
 
 ## Roadmap
 
 Future ideas:
 
-- Expose validation through FastAPI and package it with Docker
 - Support additional plate formats, such as 384-well plates
 - Add configurable validation policies
 - Validate sample manifests from CSV files
@@ -337,3 +337,63 @@ simulated API responses and require no API key.
 
 API references are available in the [Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs)
 and [model documentation](https://developers.openai.com/api/docs/models/gpt-6.1-terra).
+
+## Validation API
+
+From the project root, activate your virtual environment and install the API and
+test dependencies. Uvicorn serves the FastAPI application over HTTP.
+
+```bash
+source .venv/bin/activate
+python3 -m pip install -e ".[dev,api]"
+python3 -m uvicorn assay_protocol_validator.api:app --reload
+```
+
+Open `http://127.0.0.1:8000/docs` for interactive API documentation. In another
+terminal, submit a protocol as a JSON object:
+
+```bash
+curl -i http://127.0.0.1:8000/validate \
+  -H 'Content-Type: application/json' \
+  --data '{
+    "assay_name": "api_demo",
+    "plate_type": "96_well",
+    "samples": [{"id": "sample_001", "well": "A1", "volume_ul": 10, "donor_id": "synthetic_001"}],
+    "reagents": [{"name": "demo_mix", "volume_ul": 20}],
+    "steps": [{"type": "dispense", "reagent": "demo_mix", "destination": "all_wells", "volume_ul": 5}]
+  }'
+```
+
+A valid protocol returns HTTP 200 with `protocol_name`, `status`, `errors`, and
+`warnings`. Warnings alone preserve HTTP 200. An invalid protocol object returns
+HTTP 422 with the same report structure. For example, changing the step's reagent
+to `unknown_mix` returns an `UNKNOWN_REAGENT` error. Malformed JSON and request
+bodies that are not JSON objects receive FastAPI's HTTP 422 `detail` response.
+The endpoint runs `validate_protocol_data()` locally and requires no API key.
+
+Run the four HTTP interface tests with:
+
+```bash
+python3 -m pytest tests/test_api.py -v
+```
+
+### Run with Docker
+
+Install and start a Docker-compatible runtime, then run these commands from the
+repository root:
+
+```bash
+docker build -t assay-protocol-validator .
+docker run --rm -p 127.0.0.1:8000:8000 assay-protocol-validator
+```
+
+Use the same curl request and documentation URL above. Stop a local Uvicorn
+server before starting the container if it already occupies port 8000. Press
+Ctrl+C to stop the container; `--rm` removes the stopped container.
+
+The Dockerfile starts from Python 3.13 slim, sets `/app` as its working directory,
+and enables immediate Python log output. It copies the package metadata and
+source, then installs the package with its API dependencies. The server runs as
+user 10001. `EXPOSE 8000` documents the container port, while `-p` maps it to the
+host. Uvicorn listens on `0.0.0.0` inside the container so that mapping can reach
+it. The example binds the host port to `127.0.0.1` for local development.
